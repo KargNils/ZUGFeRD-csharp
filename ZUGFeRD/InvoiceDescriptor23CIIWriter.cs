@@ -1432,7 +1432,7 @@ namespace s2industries.ZUGFeRD
             if (tradeAllowanceCharge.ChargePercentage.HasValue)
             {
                 writer.WriteStartElement("ram", "CalculationPercent"); // allowance: BT-94, charge: BT-101
-                writer.WriteValue(_formatDecimal(tradeAllowanceCharge.ChargePercentage.Value));
+                writer.WriteValue(_formatPercent(tradeAllowanceCharge.ChargePercentage.Value));
                 writer.WriteEndElement();
             }
 

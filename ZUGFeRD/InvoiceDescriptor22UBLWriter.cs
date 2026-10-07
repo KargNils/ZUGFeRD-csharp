@@ -613,7 +613,7 @@ namespace s2industries.ZUGFeRD
             if (tradeAllowanceCharge.ChargePercentage.HasValue && tradeAllowanceCharge.BasisAmount != null)
             {
                 _Writer.WriteStartElement("cbc", "MultiplierFactorNumeric");
-                _Writer.WriteValue(_formatDecimal(tradeAllowanceCharge.ChargePercentage.Value, 2));
+                _Writer.WriteValue(_formatPercent(tradeAllowanceCharge.ChargePercentage.Value));
                 _Writer.WriteEndElement();
             }
 

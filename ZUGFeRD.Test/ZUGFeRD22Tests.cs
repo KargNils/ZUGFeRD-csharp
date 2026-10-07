@@ -4145,5 +4145,38 @@ namespace s2industries.ZUGFeRD.Test
             Assert.IsNotNull(withDueDate.SelectSingleNode("//ram:SpecifiedTradePaymentTerms/ram:DueDateDateTime", nsmgr));
             Assert.IsNull(withDueDate.SelectSingleNode("//ram:SpecifiedTradePaymentTerms/ram:Description", nsmgr));
         } // !TestPaymentTermsXRechnungWithoutDescriptionWritesNoEmptyElements()
+
+
+        /// <summary>
+        /// PEPPOL-EN16931-R040: the document level percentage must not be rounded to two decimals
+        /// </summary>
+        [TestMethod]
+        public void TestDocumentLevelAllowancePercentageKeepsDecimals()
+        {
+            InvoiceDescriptor desc = _InvoiceProvider.CreateInvoice();
+            desc.AddTradeAllowance(1000m, CurrencyCodes.EUR, 33m, 3.3m, "Rabatt", TaxTypes.VAT, TaxCategoryCodes.S, 19m);
+            desc.AddTradeAllowance(1000m, CurrencyCodes.EUR, 32.97m, 3.297m, "Rabatt", TaxTypes.VAT, TaxCategoryCodes.S, 19m);
+            desc.AddTradeAllowance(1000m, CurrencyCodes.EUR, 15.87m, 1.58730158m, "Rabatt", TaxTypes.VAT, TaxCategoryCodes.S, 19m);
+            string[] expected = { "3.30", "3.297", "1.5873" };
+
+            MemoryStream msCII = new MemoryStream();
+            desc.Save(msCII, ZUGFeRDVersion.Version23, Profile.XRechnung);
+            msCII.Seek(0, SeekOrigin.Begin);
+            XmlDocument cii = new XmlDocument();
+            cii.Load(msCII);
+            XmlNamespaceManager ciiNsmgr = new XmlNamespaceManager(cii.NameTable);
+            ciiNsmgr.AddNamespace("ram", cii.DocumentElement.GetNamespaceOfPrefix("ram"));
+            CollectionAssert.AreEqual(expected, cii.SelectNodes("//ram:ApplicableHeaderTradeSettlement/ram:SpecifiedTradeAllowanceCharge/ram:CalculationPercent", ciiNsmgr).Cast<XmlNode>().Select(n => n.InnerText).ToArray());
+
+            MemoryStream msUBL = new MemoryStream();
+            desc.Save(msUBL, ZUGFeRDVersion.Version23, Profile.XRechnung, ZUGFeRDFormats.UBL);
+            msUBL.Seek(0, SeekOrigin.Begin);
+            XmlDocument ubl = new XmlDocument();
+            ubl.Load(msUBL);
+            XmlNamespaceManager ublNsmgr = new XmlNamespaceManager(ubl.NameTable);
+            ublNsmgr.AddNamespace("cac", "urn:oasis:names:specification:ubl:schema:xsd:CommonAggregateComponents-2");
+            ublNsmgr.AddNamespace("cbc", "urn:oasis:names:specification:ubl:schema:xsd:CommonBasicComponents-2");
+            CollectionAssert.AreEqual(expected, ubl.SelectNodes("/*/cac:AllowanceCharge/cbc:MultiplierFactorNumeric", ublNsmgr).Cast<XmlNode>().Select(n => n.InnerText).ToArray());
+        } // !TestDocumentLevelAllowancePercentageKeepsDecimals()
     }
 }

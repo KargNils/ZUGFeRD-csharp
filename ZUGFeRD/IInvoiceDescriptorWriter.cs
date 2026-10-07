@@ -96,6 +96,21 @@ namespace s2industries.ZUGFeRD
 
 
         /// <summary>
+        /// Percentages have no restriction on the number of decimals (Peppol BIS Billing 3.0, 7.2.3).
+        /// Rounding to two decimals would break PEPPOL-EN16931-R040 (amount = base amount * percentage / 100).
+        /// </summary>
+        protected string _formatPercent(decimal? value)
+        {
+            if (value == null)
+            {
+                return String.Empty;
+            }
+
+            return Math.Round(value.Value, 4, MidpointRounding.AwayFromZero).ToString("0.00##", CultureInfo.InvariantCulture);
+        } // !_formatPercent()
+
+
+        /// <summary>
         /// Determines whether a VAT breakdown (BG-23) may carry a VAT exemption reason text (BT-120) or code (BT-121).
         /// EN 16931 forbids both for the categories listed below.
         /// </summary>
