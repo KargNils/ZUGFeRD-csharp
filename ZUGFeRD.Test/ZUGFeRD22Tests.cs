@@ -4112,6 +4112,38 @@ namespace s2industries.ZUGFeRD.Test
 
             InvoiceDescriptor invoice = InvoiceDescriptor.Load(path);
             Assert.AreEqual(Profile.Extended, invoice.Profile);
-        } // !TestLocalNamespace()        
+        } // !TestLocalNamespace()
+
+
+        /// <summary>
+        /// PEPPOL-EN16931-R008: XRechnung must not contain an empty ram:Description or ram:SpecifiedTradePaymentTerms
+        /// </summary>
+        [TestMethod]
+        public void TestPaymentTermsXRechnungWithoutDescriptionWritesNoEmptyElements()
+        {
+            XmlDocument saveXRechnung(DateTime? dueDate)
+            {
+                InvoiceDescriptor desc = _InvoiceProvider.CreateInvoice();
+                desc.GetTradePaymentTerms().Clear();
+                desc.AddTradePaymentTerms(String.Empty, dueDate);
+
+                MemoryStream ms = new MemoryStream();
+                desc.Save(ms, ZUGFeRDVersion.Version23, Profile.XRechnung);
+                ms.Seek(0, SeekOrigin.Begin);
+
+                XmlDocument document = new XmlDocument();
+                document.Load(ms);
+                return document;
+            }
+
+            XmlDocument withoutDueDate = saveXRechnung(null);
+            XmlNamespaceManager nsmgr = new XmlNamespaceManager(withoutDueDate.NameTable);
+            nsmgr.AddNamespace("ram", withoutDueDate.DocumentElement.GetNamespaceOfPrefix("ram"));
+            Assert.IsNull(withoutDueDate.SelectSingleNode("//ram:SpecifiedTradePaymentTerms", nsmgr));
+
+            XmlDocument withDueDate = saveXRechnung(new DateTime(2026, 10, 31));
+            Assert.IsNotNull(withDueDate.SelectSingleNode("//ram:SpecifiedTradePaymentTerms/ram:DueDateDateTime", nsmgr));
+            Assert.IsNull(withDueDate.SelectSingleNode("//ram:SpecifiedTradePaymentTerms/ram:Description", nsmgr));
+        } // !TestPaymentTermsXRechnungWithoutDescriptionWritesNoEmptyElements()
     }
 }

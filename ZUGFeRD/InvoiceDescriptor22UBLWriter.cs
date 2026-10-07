@@ -460,7 +460,7 @@ namespace s2industries.ZUGFeRD
             }
 
             // PaymentTerms (optional)
-            if (this._Descriptor.GetTradePaymentTerms().Where(x => !string.IsNullOrEmpty(x.Description)).ToList().Count > 0)
+            if (this._Descriptor.GetTradePaymentTerms().Any(x => !string.IsNullOrWhiteSpace(x.Description)))
             {
                 _Writer.WriteStartElement("cac", "PaymentTerms");
 
@@ -468,7 +468,7 @@ namespace s2industries.ZUGFeRD
                 {
                     _Writer.WriteStartElement("cbc", "Note");
 
-                    foreach (PaymentTerms paymentTerms in this._Descriptor.GetTradePaymentTerms().Where(x => !string.IsNullOrEmpty(x.Description)))
+                    foreach (PaymentTerms paymentTerms in this._Descriptor.GetTradePaymentTerms().Where(x => !string.IsNullOrWhiteSpace(x.Description)))
                     {
                         _Writer.WriteRawString(Environment.NewLine);
                         _Writer.WriteRawIndention();

@@ -1081,8 +1081,6 @@ namespace s2industries.ZUGFeRD
                 case Profile.XRechnung:
                     if (_Descriptor.GetTradePaymentTerms().Count > 0 || !string.IsNullOrWhiteSpace(_Descriptor.PaymentMeans?.SEPAMandateReference))
                     {
-                        _Writer.WriteStartElement("ram", "SpecifiedTradePaymentTerms");
-
                         var sbPaymentNotes = new StringBuilder();
                         DateTime? dueDate = null;
                         foreach (PaymentTerms paymentTerms in this._Descriptor.GetTradePaymentTerms())
@@ -1123,24 +1121,39 @@ namespace s2industries.ZUGFeRD
                             dueDate = dueDate ?? paymentTerms.DueDate;
                         }
 
-                        _Writer.WriteStartElement("ram", "Description");
-                        _Writer.WriteRawString(sbPaymentNotes.ToString().TrimEnd()); // BT-20
-                        _Writer.WriteRawString("\n");
-                        _Writer.WriteEndElement(); // !ram:Description
-                        if (dueDate.HasValue)
-                        {
-                            _Writer.WriteStartElement("ram", "DueDateDateTime");
-                            _writeElementWithAttributeWithPrefix(_Writer, "udt", "DateTimeString", "format", "102", _formatDate(dueDate.Value));
-                            _Writer.WriteEndElement(); // !ram:DueDateDateTime
-                        }
+                        string paymentNotes = sbPaymentNotes.ToString().TrimEnd();
 
                         // BT-89 is only required/allowed on DirectDebit (BR-DE-29)
+                        string directDebitMandateID = null;
                         if (this._Descriptor.PaymentMeans?.TypeCode == PaymentMeansTypeCodes.DirectDebit || this._Descriptor.PaymentMeans?.TypeCode == PaymentMeansTypeCodes.SEPADirectDebit)
                         {
-                            _Writer.WriteOptionalElementString("ram", "DirectDebitMandateID", _Descriptor.PaymentMeans?.SEPAMandateReference);
+                            directDebitMandateID = _Descriptor.PaymentMeans?.SEPAMandateReference;
                         }
 
-                        _Writer.WriteEndElement(); // !ram:SpecifiedTradePaymentTerms
+                        // an empty Description or SpecifiedTradePaymentTerms violates PEPPOL-EN16931-R008
+                        if (!string.IsNullOrWhiteSpace(paymentNotes) || dueDate.HasValue || !string.IsNullOrWhiteSpace(directDebitMandateID))
+                        {
+                            _Writer.WriteStartElement("ram", "SpecifiedTradePaymentTerms");
+
+                            if (!string.IsNullOrWhiteSpace(paymentNotes))
+                            {
+                                _Writer.WriteStartElement("ram", "Description");
+                                _Writer.WriteRawString(paymentNotes); // BT-20
+                                _Writer.WriteRawString("\n");
+                                _Writer.WriteEndElement(); // !ram:Description
+                            }
+
+                            if (dueDate.HasValue)
+                            {
+                                _Writer.WriteStartElement("ram", "DueDateDateTime");
+                                _writeElementWithAttributeWithPrefix(_Writer, "udt", "DateTimeString", "format", "102", _formatDate(dueDate.Value));
+                                _Writer.WriteEndElement(); // !ram:DueDateDateTime
+                            }
+
+                            _Writer.WriteOptionalElementString("ram", "DirectDebitMandateID", directDebitMandateID);
+
+                            _Writer.WriteEndElement(); // !ram:SpecifiedTradePaymentTerms
+                        }
                     }
                     break;
                 case Profile.Extended:
